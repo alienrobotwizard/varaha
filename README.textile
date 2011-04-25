@@ -1,0 +1,19 @@
+h1. Varaha
+
+A set of Apache Pig scripts and UDFs (User Defined Functions) for machine learning and natural language processing. Why should Mahout have all the fun?
+
+h2. Build
+
+You'll want to build the UDFs before doing anything else. To do that simply do:
+
+<pre><code>
+mvn clean package
+</code></pre>
+
+h2. The rest
+
+See individual readme files under the scripts directory for how to run.
+
+h2. Why is it called Varaha?
+
+Evidently, Varaha is an avatar of the Hindu god Vishnu, in the form of a Boar.
