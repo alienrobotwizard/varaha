@@ -62,4 +62,4 @@ tfidf_all = FOREACH token_usages {
 grouped = GROUP tfidf_all BY doc_id;
 vectors = FOREACH grouped GENERATE group AS doc_id, tfidf_all.(token, weight) AS vector;
 
-STORE vectors INTO '$OUT';
+STORE vectors INTO '$TFIDF';
