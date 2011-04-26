@@ -7,7 +7,7 @@ h3. TFIDF
 First we need to run tf-idf over our documents to vectorize them. It is assumed that your documents are tab-separated where the first field is the document id and the second field is the document text that contains *no* newlines.
 
 <pre><code>
-pig -p DOCS=/path/to/my_docs -p TFIDF=/path/to/output tfidf.pig
+pig -p DOCS=/path/to/my_docs -p NDOCS=<num_docs> -p TFIDF=/path/to/output tfidf.pig
 </code></pre>
 
 h3. K Centers

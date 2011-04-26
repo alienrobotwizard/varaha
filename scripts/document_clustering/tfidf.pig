@@ -1,13 +1,11 @@
---
--- Define a wukong tokenization script for breaking the raw text data into tokens
---
-DEFINE tokenize_docs `ruby tokenize_documents.rb --id_field=0 --text_field=1 --map` SHIP('tokenize_documents.rb');
+register '../../target/varaha-1.0-SNAPSHOT.jar'; -- yikes, just autoregister this in the runner
+register '../../lib/lucene-core-3.1.0.jar';
 
 --
 -- Load and tokenize the raw documents
 --
 raw_documents = LOAD '$DOCS' AS (doc_id:chararray, text:chararray);
-tokenized     = STREAM raw_documents THROUGH tokenize_docs AS (doc_id:chararray, token:chararray);
+tokenized     = FOREACH raw_documents GENERATE doc_id AS doc_id, FLATTEN(varaha.text.TokenizeText(text)) AS (token:chararray);
 
 --
 -- Count the number of times each (doc_id,token) pair occurs. (term counts)
@@ -60,6 +58,6 @@ tfidf_all = FOREACH token_usages {
 -- Finally generate term vectors for later processing
 --
 grouped = GROUP tfidf_all BY doc_id;
-vectors = FOREACH grouped GENERATE group AS doc_id, tfidf_all.(token, weight) AS vector;
+vectors = FOREACH grouped GENERATE group AS doc_id, tfidf_all.(token, tf_idf) AS vector;
 
 STORE vectors INTO '$TFIDF';
