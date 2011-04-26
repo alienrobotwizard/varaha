@@ -7,7 +7,7 @@ h3. TFIDF
 First we need to run tf-idf over our documents to vectorize them. It is assumed that your documents are tab-separated where the first field is the document id and the second field is the document text that contains *no* newlines.
 
 <pre><code>
-$VARAHA_HOME/bin/varaha -p DOCS=/path/to/my_docs -p NDOCS=<num_docs> -p TFIDF=/path/to/output tfidf.pig
+pig -p DOCS=/path/to/my_docs -p NDOCS=<num_docs> -p TFIDF=/path/to/output tfidf.pig
 </code></pre>
 
 h3. K Centers
@@ -15,7 +15,7 @@ h3. K Centers
 This is the tricky step. There's a pig sampler that can uniformly sample your data and generate K initial centers but it's hacky. To use it do:
 
 <pre><code>
-$VARAHA_HOME/bin/varaha -p TFIDF=/path/to/tfidf-output -p CENTERS=/path/to/output sample_k_centers.pig
+pig -p TFIDF=/path/to/tfidf-output -p CENTERS=/path/to/output sample_k_centers.pig
 </code></pre>
 
 You can also generate your own centers as long as they can be read into the following pig schema:
@@ -29,7 +29,7 @@ h3. Iteration
 I haven't written a driver yet. Boo hoo. Meanwhile, to run a single iteration that clusters document vectors around the K centers, and computes centroids, do:
 
 <pre><code>
-$VARAHA_HOME/bin/varaha -p TFIDF=/path/to/tfidf-output -p CURR_CENTERS=/path/to/current-centers -p NEXT_CENTERS=/path/to/next-centers cluster_documents.pig
+pig -p TFIDF=/path/to/tfidf-output -p CURR_CENTERS=/path/to/current-centers -p NEXT_CENTERS=/path/to/next-centers cluster_documents.pig
 </code></pre>
 
 Run that one a bunch of times, using the output centers as new centers for the next iteration and you should be happy.

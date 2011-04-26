@@ -16,6 +16,9 @@
 -- limitations under the License.
 --
 
+register '../../target/varaha-1.0-SNAPSHOT.jar';
+register '../../lib/lucene-core-3.1.0.jar';
+
 vectors   = LOAD '$TFIDF'        AS (doc_id:chararray, vector:bag {t:tuple (token:chararray, weight:double)});
 k_centers = LOAD '$CURR_CENTERS' AS (doc_id:chararray, vector:bag {t:tuple (token:chararray, weight:double)});
 
