@@ -43,3 +43,4 @@ pkg
 target
 *.RData
 *.Rhistory
+.pig_registers

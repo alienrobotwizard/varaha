@@ -15,9 +15,6 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 --
-
-register '../../target/varaha-1.0-SNAPSHOT.jar'; -- yikes, just autoregister this in the runner
-register '../../lib/lucene-core-3.1.0.jar';
    
 -- 
 -- Load and tokenize the raw documents

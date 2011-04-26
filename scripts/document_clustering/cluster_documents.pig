@@ -16,8 +16,6 @@
 -- limitations under the License.
 --
 
-register '../../target/varaha-1.0-SNAPSHOT.jar'; -- yikes, just autoregister this in the runner
-
 vectors   = LOAD '$TFIDF'        AS (doc_id:chararray, vector:bag {t:tuple (token:chararray, weight:double)});
 k_centers = LOAD '$CURR_CENTERS' AS (doc_id:chararray, vector:bag {t:tuple (token:chararray, weight:double)});
 
