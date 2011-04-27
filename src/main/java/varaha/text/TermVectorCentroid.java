@@ -65,12 +65,14 @@ public class TermVectorCentroid extends EvalFunc<DataBag> {
         for (Tuple t : bagOfVectors) {
             DataBag v = (DataBag)t.get(0);
             for (Tuple v_i : v) {
-                String term = v_i.get(0).toString();
-                Object currentValue = termSums.get(term);
-                if (currentValue == null) {
-                    termSums.put(term, v_i.get(1));
-                } else {
-                    termSums.put(term, (Double)v_i.get(1) + (Double)currentValue);
+                if (!(v_i.isNull(0) || v_i.isNull(1))) {
+                    String term = v_i.get(0).toString();
+                    Object currentValue = termSums.get(term);
+                    if (currentValue == null) {
+                        termSums.put(term, v_i.get(1));
+                    } else {
+                        termSums.put(term, (Double)v_i.get(1) + (Double)currentValue);
+                    }
                 }
             }
         }

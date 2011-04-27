@@ -69,13 +69,15 @@ public class TermVector implements Iterable<Tuple>{
        @param other: Another term vector
 
        @return the dot product
-     */
+    */
     public Double dotProduct(TermVector other) throws ExecException {
         Double result = 0.0;
         for (Tuple x_i : this) {
             for (Tuple y_i : other) {
-                if (x_i.get(0).toString().equals(y_i.get(0).toString())) {
-                    result += (Double)x_i.get(1)*(Double)y_i.get(1);
+                if ( !(x_i.isNull(0) || x_i.isNull(1) || y_i.isNull(0) || y_i.isNull(1)) ) {
+                    if (x_i.get(0).toString().equals(y_i.get(0).toString())) {
+                        result += (Double)x_i.get(1)*(Double)y_i.get(1);
+                    }
                 }
             }
         }
