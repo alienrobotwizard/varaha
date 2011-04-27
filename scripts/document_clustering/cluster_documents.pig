@@ -61,7 +61,7 @@ cut_clusters    = FOREACH clusters GENERATE group AS center_id, cut_nearest.vect
 -- centers in the next iteration.
 --
 centroids       = FOREACH cut_clusters GENERATE
-                    group AS center_id,
+                    center_id AS center_id,
                     varaha.text.TermVectorCentroid(vector_collection)
                   ;
 
