@@ -1,2 +1,1 @@
-- text tokenizer needs some aggressive filtering of stopwords. Look at other Lucene analyzers
 - standardize the way jars are dealt with, using relative paths in the scripts themselves is crufty and doesn't scale

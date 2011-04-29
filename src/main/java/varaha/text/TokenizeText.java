@@ -21,6 +21,8 @@ package varaha.text;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.Tuple;
@@ -37,7 +39,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * TokenizeText uses the Lucene libraries StandardAnalyzer class to tokenize a
- * raw text input. Output is a pig bag containing tokens.
+ * raw text input. A list of the stopwords used is available {@link StopWords}.
+ * Output is a pig bag containing tokens.
  *  
  * <dt><b>Example:</b></dt>
  * <dd><code>
@@ -56,7 +59,7 @@ public class TokenizeText extends EvalFunc<DataBag> {
     private static TupleFactory tupleFactory = TupleFactory.getInstance();
     private static BagFactory bagFactory = BagFactory.getInstance();
     private static String NOFIELD = "";
-    private static StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_31);
+    private static StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_31, StopWords.ENGLISH_STOP_WORDS);
 
     public DataBag exec(Tuple input) throws IOException {
         if (input == null || input.size() < 1 || input.isNull(0))
