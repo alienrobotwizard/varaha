@@ -22,9 +22,11 @@ register '../../lib/lucene-core-3.1.0.jar';
 vectors   = LOAD '$TFIDF'        AS (doc_id:chararray, vector:bag {t:tuple (token:chararray, weight:double)});
 k_centers = LOAD '$CURR_CENTERS' AS (doc_id:chararray, vector:bag {t:tuple (token:chararray, weight:double)});
 
+
 --
 -- Compute the similarity between all document vectors and each of the K centers
 --
+
 --
 -- FIXME: this can be optimized for K large, cross is dangerous
 --
@@ -49,20 +51,32 @@ only_nearest    = FOREACH finding_nearest {
                   };
 
 --
--- Group on center_id and collect all the documents associated with each center. This
--- can be quite memory intensive and gets nearly impossible when K/NDOCS is a small number.
+-- Get the number of vectors associated with the center
 --
-cut_nearest     = FOREACH only_nearest GENERATE center_id, vector;
-clusters        = GROUP cut_nearest BY center_id; -- this gets worse as K/NDOCS gets smaller 
-cut_clusters    = FOREACH clusters GENERATE group AS center_id, cut_nearest.vector AS vector_collection;
+center_grpd = GROUP only_nearest BY center_id;
+center_cnts = FOREACH center_grpd GENERATE FLATTEN(only_nearest) AS (center_id, center, doc_id, vector, similarity), COUNT(only_nearest) AS num_vectors;
 
 --
--- Compute the centroid of all the documents associated with a given center. These will be the new
--- centers in the next iteration.
+-- Calculate the centroids in a distributed fashion
 --
-centroids       = FOREACH cut_clusters GENERATE
-                    center_id AS center_id,
-                    varaha.text.TermVectorCentroid(vector_collection)
-                  ;
+cut_nearest    = FOREACH center_cnts GENERATE center_id AS center_id, num_vectors AS num_vectors, FLATTEN(vector) AS (token:chararray, weight:double);
+centroid_start = GROUP cut_nearest BY (center_id, token);
+weight_avgs    = FOREACH centroid_start GENERATE FLATTEN(group) AS (center_id, token), (double)SUM(cut_nearest.weight)/(double)MAX(cut_nearest.num_vectors) AS weight_avg;
+centroids_grp  = GROUP weight_avgs BY center_id;
+
+--
+-- Need to keep from having humungous vectors
+--
+centroids      = FOREACH centroids_grp {
+                   -- 
+                   -- FIXME: for some reason TOP($MAX_CENTER_SIZE, 2, weight_avgs) throws NPE
+                   --
+                   ordrd            = ORDER weight_avgs BY weight_avg DESC;  
+                   shortened_vector = LIMIT ordrd $MAX_CENTER_SIZE;
+                   GENERATE
+                     group            AS center_id,
+                     shortened_vector.($1, $2) AS vector
+                   ;
+                 };
 
 STORE centroids INTO '$NEXT_CENTERS';

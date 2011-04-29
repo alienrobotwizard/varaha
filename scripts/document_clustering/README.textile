@@ -26,10 +26,18 @@ You can also generate your own centers as long as they can be read into the foll
 
 h3. Iteration
 
-I haven't written a driver yet. Boo hoo. Meanwhile, to run a single iteration that clusters document vectors around the K centers, and computes centroids, do:
+To run a single iteration that clusters document vectors around the K centers, and computes centroids, do:
 
 <pre><code>
-pig -p TFIDF=/path/to/tfidf-output -p CURR_CENTERS=/path/to/current-centers -p NEXT_CENTERS=/path/to/next-centers cluster_documents.pig
+pig -p TFIDF=/path/to/tfidf-output -p MAX_CENTER_SIZE=<max_center_size> -p CURR_CENTERS=/path/to/current-centers -p NEXT_CENTERS=/path/to/next-centers cluster_documents.pig
 </code></pre>
 
-Run that one a bunch of times, using the output centers as new centers for the next iteration and you should be happy.
+where <max_center_size> is the maximum allowable center vector length.
+
+There's a shell script that can run it multiple times called clusterer.sh:
+
+<pre><code>
+./clusterer.sh /path/to/workdir <max_center_size> <num_iterations> <start_iteration>
+</code></pre>
+
+which assumes you've already ran tfidf and sampled k centers and placed their outputs in the workdir named 'tfidf-vectors' and 'k_centers-0' resplectively.

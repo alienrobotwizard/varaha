@@ -2,8 +2,10 @@
 
 work_dir=$1     ; shift
 
-if [ "$work_dir" == '' ] ; then echo "Please specify the directory containing the K initial centers and tfidf vectors: $0 work_dir [number_of_iterations] [start_iteration]" ; exit ; fi
+if [ "$work_dir" == '' ] ; then echo "Please specify the directory containing the K initial centers and tfidf vectors: $0 work_dir [max_center_size] [number_of_iterations] [start_iteration]" ; exit ; fi
 
+# How big should the centers be allowed to grow: default 1000
+max_center_size=${1-1000} ; shift
 # How many rounds to run: default 10
 n_iters=${1-10} ; shift
 # the iteration to start with: default 0
@@ -20,5 +22,5 @@ for (( iter=0 ; "$iter" < "$n_iters" ; iter++ )) ; do
   echo -e "\n****************************\n"
   echo -e "Iteration $(( $iter + 1 )) / $n_iters:\t `basename $curr_iter_file` => `basename $next_iter_file`"
   echo -e "\n****************************"
-  pig -p TFIDF=$tfidf -p CURR_CENTERS=$curr_iter_file -p NEXT_CENTERS=$next_iter_file $script_dir/cluster_documents.pig
+  pig -p TFIDF=$tfidf -p CURR_CENTERS=$curr_iter_file -p NEXT_CENTERS=$next_iter_file -p MAX_CENTER_SIZE=$max_center_size $script_dir/cluster_documents.pig
 done
