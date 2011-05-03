@@ -60,22 +60,32 @@ token_usages    = FOREACH term_usage_bag GENERATE
                    ;
 
 --
--- Generate the tf-idf for each (doc_id, token, pair)
+-- Generate the tf-idf and tf-idf squared for each (doc_id, token, pair)
 --
 tfidf_all = FOREACH token_usages {
               idf    = LOG((double)$NDOCS/(double)num_docs_with_token);
               tf_idf = (double)term_freq*idf;
-                GENERATE
-                  doc_id AS doc_id,
-                  token  AS token,
-                  tf_idf AS tf_idf
+              tf_idf_sq = (double)term_freq*idf*term_freq*idf;
+              GENERATE
+                  doc_id    AS doc_id,
+                  token     AS token,
+                  tf_idf    AS tf_idf,
+                  tf_idf_sq AS tf_idf_sq
                 ;
              };
 
 --
--- Finally generate term vectors for later processing
+-- Now create the term vectors and attach certain attributes to it we would not like to
+-- calculate again such as the size, the norm, and the norm squared.
 --
 grouped = GROUP tfidf_all BY doc_id;
-vectors = FOREACH grouped GENERATE group AS doc_id, tfidf_all.(token, tf_idf) AS vector;
+vectors = FOREACH grouped {
+            norm_sq  = (double)SUM(tfidf_all.tf_idf_sq);
+            GENERATE
+              group    AS id,
+              norm_sq  AS norm_sq,
+              tfidf_all.(token, tf_idf) AS vector
+            ;
+          };
 
 STORE vectors INTO '$TFIDF';

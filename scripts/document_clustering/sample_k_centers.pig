@@ -19,7 +19,7 @@
 --
 -- Load the vectors from the tfidf process.
 --
-vectors = LOAD '$TFIDF' AS (doc_id:chararray, vector:bag {t:tuple (token:chararray, weight:double)});
+vectors = LOAD '$TFIDF' AS (doc_id:chararray, norm_sq:double, vector:bag {t:tuple (token:chararray, weight:double)});
 
 --
 -- Choose K random centers. This is kind of a hacky process. Since we can't really use
