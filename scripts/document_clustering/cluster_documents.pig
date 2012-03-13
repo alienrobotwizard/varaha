@@ -16,9 +16,6 @@
 -- limitations under the License.
 --
 
-register '../../target/varaha-1.0-SNAPSHOT.jar';
-register '../../lib/lucene-core-3.1.0.jar';
-
 vectors   = LOAD '$TFIDF'        AS (doc_id:chararray, norm_sq:double, vector:bag {t:tuple (token:chararray, weight:double)});
 k_centers = LOAD '$CURR_CENTERS' AS (doc_id:chararray, norm_sq:double, vector:bag {t:tuple (token:chararray, weight:double)});
 
@@ -47,62 +44,69 @@ similarities  = FOREACH grouped_pairs {
                   ;
                 };
 
+
 --
--- Get the nearest center associated with each document and reattach the vectors
+-- Get the nearest center associated with each document and reattach the vectors.
+-- FIXME: See below for why it's necessary to use a filter
 --
-finding_nearest = COGROUP similarities BY doc_id INNER, vectors_flat BY doc_id INNER;
-only_nearest    = FOREACH finding_nearest {
+finding_nearest_1 = COGROUP similarities BY doc_id INNER, vectors_flat BY doc_id INNER;
+finding_nearest_2 = FILTER finding_nearest_1 BY similarities IS NOT NULL;
+only_nearest    = FOREACH finding_nearest_2 {
                     --
                     -- FIXME: Ocassionally, TOP throws an NPE
                     -- see: http://issues.apache.org/jira/browse/PIG-2031
                     --
-                    ordrd_centers  = ORDER similarities BY similarity DESC;
-                    nearest_center = LIMIT ordrd_centers 1;
+                    nearest_center = TOP(1, 2, similarities);
                     GENERATE
                       FLATTEN(nearest_center)       AS (center_id, doc_id, similarity),
                       vectors_flat.(token, weight)  AS vector 
                     ;
                   };
 
---
--- Count the number of documents associated with each center
---
-center_grpd = GROUP only_nearest BY center_id;
-center_cnts = FOREACH center_grpd GENERATE FLATTEN(only_nearest.(center_id, vector)) AS (center_id, vector), COUNT(only_nearest) AS num_vectors;
-
---
--- Get new counts
---
-cut_nearest    = FOREACH center_cnts GENERATE center_id AS center_id, num_vectors AS num_vectors, FLATTEN(vector) AS (token:chararray, weight:double);
-centroid_start = GROUP cut_nearest BY (center_id, token);
-weight_avgs    = FOREACH centroid_start {
-                   weight_avg    = (double)SUM(cut_nearest.weight)/(double)MAX(cut_nearest.num_vectors);
-                   weight_avg_sq = ((double)SUM(cut_nearest.weight)/(double)MAX(cut_nearest.num_vectors))*(double)SUM(cut_nearest.weight)/(double)MAX(cut_nearest.num_vectors);
-                   GENERATE
-                     FLATTEN(group) AS (center_id, token),
-                     weight_avg     AS tf_idf,
-                     weight_avg_sq  AS tf_idf_sq
-                   ;
-                 };
-                   
-centroids_grp  = GROUP weight_avgs BY center_id;
-
---
--- Need to keep from having humungous vectors
---
-centroids      = FOREACH centroids_grp {
-                   --
-                   -- FIXME: Ocassionally, TOP throws an NPE
-                   -- see: http://issues.apache.org/jira/browse/PIG-2031
-                   --        
-                   ordrd            = ORDER weight_avgs BY tf_idf DESC;  
-                   shortened_vector = LIMIT ordrd $MAX_CENTER_SIZE;
-                   norm_sq          = SUM(shortened_vector.tf_idf_sq);
-                   GENERATE
-                     group            AS center_id,
-                     norm_sq          AS norm_sq,
-                     shortened_vector.($1, $2) AS vector
-                   ;
-                 };
-
-STORE centroids INTO '$NEXT_CENTERS';
+STORE only_nearest INTO '$NEXT_CENTERS-only_nearest';
+-- 
+-- --
+-- -- Count the number of documents associated with each center
+-- --
+-- center_grpd = GROUP only_nearest BY center_id;
+-- center_cnts = FOREACH center_grpd GENERATE FLATTEN(only_nearest.(center_id, vector)) AS (center_id, vector), COUNT(only_nearest) AS num_vectors;
+-- 
+-- for_guestimate = FOREACH center_grpd GENERATE FLATTEN(only_nearest.(center_id, doc_id)) AS (center_id, doc_id);
+-- STORE for_guestimate INTO '$NEXT_CENTERS-checkpoint';
+-- 
+-- --
+-- -- Get new counts
+-- --
+-- cut_nearest    = FOREACH center_cnts GENERATE center_id AS center_id, num_vectors AS num_vectors, FLATTEN(vector) AS (token:chararray, weight:double);
+-- centroid_start = GROUP cut_nearest BY (center_id, token);
+-- weight_avgs    = FOREACH centroid_start {
+--                    weight_avg    = (double)SUM(cut_nearest.weight)/(double)MAX(cut_nearest.num_vectors);
+--                    weight_avg_sq = ((double)SUM(cut_nearest.weight)/(double)MAX(cut_nearest.num_vectors))*(double)SUM(cut_nearest.weight)/(double)MAX(cut_nearest.num_vectors);
+--                    GENERATE
+--                      FLATTEN(group) AS (center_id, token),
+--                      weight_avg     AS tf_idf,
+--                      weight_avg_sq  AS tf_idf_sq
+--                    ;
+--                  };
+--                    
+-- centroids_grp  = GROUP weight_avgs BY center_id;
+-- 
+-- --
+-- -- Need to keep from having humungous vectors
+-- --
+-- centroids      = FOREACH centroids_grp {
+--                    --
+--                    -- FIXME: Ocassionally, TOP throws an NPE
+--                    -- see: http://issues.apache.org/jira/browse/PIG-2031
+--                    --        
+--                    ordrd            = ORDER weight_avgs BY tf_idf DESC;  
+--                    shortened_vector = LIMIT ordrd $MAX_CENTER_SIZE;
+--                    norm_sq          = SUM(shortened_vector.tf_idf_sq);
+--                    GENERATE
+--                      group            AS center_id,
+--                      norm_sq          AS norm_sq,
+--                      shortened_vector.($1, $2) AS vector
+--                    ;
+--                  };
+-- 
+-- STORE centroids INTO '$NEXT_CENTERS';

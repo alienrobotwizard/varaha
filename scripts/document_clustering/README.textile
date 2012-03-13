@@ -15,10 +15,10 @@ h3. K Centers
 This is the tricky step. There's a pig sampler that can uniformly sample your data and generate K initial centers but it's hacky. To use it do:
 
 <pre><code>
-pig -p TFIDF=/path/to/tfidf-output -p CENTERS=/path/to/output sample_k_centers.pig
+pig -p TFIDF=/path/to/tfidf-vectors -p CENTERS=/path/to/output -p K=<num_centers> -p S=<sampling_percent> sample_k_centers.pig
 </code></pre>
 
-You can also generate your own centers as long as they can be read into the following pig schema:
+Where S is a sampling percentage that produces some number of documents slightly larger than (but not too much so) K. A good heuristic is S=(K+10)/NDOCS. You can also use your own centers as long as they can be read into the following pig schema:
 
 <pre><code>
 (doc_id:chararray, vector:bag {t:tuple (token:chararray, weight:double)})
