@@ -20,9 +20,12 @@ package varaha.text;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
+import edu.stanford.nlp.ling.TaggedWord;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
@@ -33,6 +36,7 @@ import edu.stanford.nlp.tagger.maxent.MaxentTagger;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.process.CoreLabelTokenFactory;
+import edu.stanford.nlp.ling.Word;
 
 /**
  * StanfordPOSTagger uses the Stanford Maximum Entropy Tagger class to Part-Of-Speech tag a
@@ -58,6 +62,7 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
     private static boolean isFirst = true;
     private static MaxentTagger tagger;
 
+    // Must also add implementation for bag sof tuples of sentences
     public DataBag exec(Tuple input) throws IOException {
         if (input == null || input.size() < 1 || input.isNull(0))
             return null;
@@ -76,41 +81,62 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
         // Output bag
         DataBag bagOfTokens = bagFactory.newDefaultBag();
 
-        StringReader textInput = new StringReader(input.get(0).toString());
+        Object inThing = input.get(0).toString();
+        if(inThing instanceof String) {
 
-        // Convert StringReader to String via StringBuilder
-        //using string builder is more efficient than concating strings together.
-        StringBuilder builder = new StringBuilder();
-        int charsRead = -1;
-        char[] chars = new char[100];
-        do {
-            charsRead = textInput.read(chars,0,chars.length);
-            //if we have valid chars, append them to end of string.
-            if(charsRead > 0)
-            {
-                builder.append(chars,0,charsRead);
+            StringReader textInput = new StringReader((String)inThing);
+
+            // Convert StringReader to String via StringBuilder
+            //using string builder is more efficient than concating strings together.
+            StringBuilder builder = new StringBuilder();
+            int charsRead = -1;
+            char[] chars = new char[100];
+            do {
+                charsRead = textInput.read(chars,0,chars.length);
+                //if we have valid chars, append them to end of string.
+                if(charsRead > 0)
+                {
+                    builder.append(chars,0,charsRead);
+                }
             }
-        }
-        while(charsRead > 0);
+            while(charsRead > 0);
 
-        // Tagging with the Stanford tagger produces another string, format: word_TAG
-        String stringReadFromReader = builder.toString();
-        String tagged = tagger.tagString(stringReadFromReader);
-        StringReader taggedInput = new StringReader(tagged);
+            // Tagging with the Stanford tagger produces another string, format: word_TAG
+            String stringReadFromReader = builder.toString();
+            String tagged = tagger.tagString(stringReadFromReader);
+            StringReader taggedInput = new StringReader(tagged);
 
-        // Use the Stanford Tokenizer to tokenize the text
-        PTBTokenizer ptbt = new PTBTokenizer(taggedInput, new CoreLabelTokenFactory(), "");
+            // Use the Stanford Tokenizer to tokenize the text
+            PTBTokenizer ptbt = new PTBTokenizer(taggedInput, new CoreLabelTokenFactory(), "");
 
-        // Now split based on '_' and build/return a bag of 2-field tuples
-        Tuple termText = tupleFactory.newTuple();
-        for (CoreLabel label; ptbt.hasNext(); ) {
-            label = (CoreLabel)ptbt.next();
-            List token = Arrays.asList(label.toString().split("_"));
-            termText = tupleFactory.newTuple(token);
+            // Now split based on '_' and build/return a bag of 2-field tuples
+            Tuple termText = tupleFactory.newTuple();
+            for (CoreLabel label; ptbt.hasNext(); ) {
+                label = (CoreLabel)ptbt.next();
+                List token = Arrays.asList(label.toString().split("_"));
+                termText = tupleFactory.newTuple(token);
+                bagOfTokens.add(termText);
+            }
             bagOfTokens.add(termText);
         }
+        else if(inThing instanceof DataBag) {
+            Iterator<Tuple> itr = ((DataBag)inThing).iterator();
+            List<Word> sentence = null;
+            while(itr.hasNext()) {
+                Tuple t = itr.next();
+                Word word = new Word(t.get(0).toString());
+                sentence.add(word);
+            }
+            ArrayList<TaggedWord> tagged_sentence = tagger.apply(sentence);
+            for( TaggedWord tw : tagged_sentence) {
+                ArrayList values = new ArrayList();
+                values.add(tw.toString());
+                values.add(tw.tag());
+                Tuple t = tupleFactory.newTuple(values);
+                bagOfTokens.add(t);
+            }
+        }
 
-        bagOfTokens.add(termText);
         return bagOfTokens;
     }
 }
