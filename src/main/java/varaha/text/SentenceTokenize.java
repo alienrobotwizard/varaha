@@ -57,19 +57,22 @@ public class SentenceTokenize extends EvalFunc<DataBag> {
             return null;
 
         // Output bag
-        DataBag bagOfTokens = bagFactory.newDefaultBag();
+        DataBag bagOfSentences = bagFactory.newDefaultBag();
 
         StringReader textInput = new StringReader(input.get(0).toString());
         DocumentPreprocessor dp = new DocumentPreprocessor(textInput);
         for (List sentence : dp) {
+            DataBag sentenceBag = bagFactory.newDefaultBag();
             ListIterator<Object> sli = sentence.listIterator();
             while(sli.hasNext())
             {
                 String word = sli.next().toString();
                 Tuple termText = tupleFactory.newTuple(word);
-                bagOfTokens.add(termText);
+                sentenceBag.add(termText);
             }
+            Tuple sentenceTuple = tupleFactory.newTuple(sentenceBag);
+            bagOfSentences.add(sentenceTuple);
         }
-        return bagOfTokens;
+        return bagOfSentences;
     }
 }

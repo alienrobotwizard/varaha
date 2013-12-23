@@ -73,7 +73,7 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
                 tagger = new MaxentTagger("edu/stanford/nlp/models/pos-tagger/english-left3words/english-left3words-distsim.tagger");
             }
             catch(Exception e) {
-                System.err.println("Exception: " + e.getMessage());
+                System.err.println("Exception loading language model: " + e.getMessage());
             }
             isFirst = false;
         }
@@ -81,9 +81,8 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
         // Output bag
         DataBag bagOfTokens = bagFactory.newDefaultBag();
 
-        Object inThing = input.get(0).toString();
+        Object inThing = input.get(0);
         if(inThing instanceof String) {
-
             StringReader textInput = new StringReader((String)inThing);
 
             // Convert StringReader to String via StringBuilder
@@ -91,7 +90,8 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
             StringBuilder builder = new StringBuilder();
             int charsRead = -1;
             char[] chars = new char[100];
-            do {
+            do
+            {
                 charsRead = textInput.read(chars,0,chars.length);
                 //if we have valid chars, append them to end of string.
                 if(charsRead > 0)
@@ -107,13 +107,15 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
             StringReader taggedInput = new StringReader(tagged);
 
             // Use the Stanford Tokenizer to tokenize the text
-            PTBTokenizer ptbt = new PTBTokenizer(taggedInput, new CoreLabelTokenFactory(), "");
+            PTBTokenizer ptbt = new PTBTokenizer(taggedInput, new CoreLabelTokenFactory(), "invertible=true");
 
             // Now split based on '_' and build/return a bag of 2-field tuples
             Tuple termText = tupleFactory.newTuple();
             for (CoreLabel label; ptbt.hasNext(); ) {
                 label = (CoreLabel)ptbt.next();
-                List token = Arrays.asList(label.toString().split("_"));
+                String word = label.value();
+
+                List<String> token = Arrays.asList(word, wordTag);
                 termText = tupleFactory.newTuple(token);
                 bagOfTokens.add(termText);
             }
@@ -124,17 +126,23 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
             List<Word> sentence = null;
             while(itr.hasNext()) {
                 Tuple t = itr.next();
-                Word word = new Word(t.get(0).toString());
-                sentence.add(word);
+                if(t.get(0) != null) {
+                    Word word = new Word(t.get(0).toString());
+                    sentence.add(word);
+                }
             }
             ArrayList<TaggedWord> tagged_sentence = tagger.apply(sentence);
             for( TaggedWord tw : tagged_sentence) {
                 ArrayList values = new ArrayList();
-                values.add(tw.toString());
-                values.add(tw.tag());
+                values.add(tw.word());
+                values.add(tw.toString("_"));
                 Tuple t = tupleFactory.newTuple(values);
                 bagOfTokens.add(t);
             }
+        }
+        else
+        {
+            throw new IOException();
         }
 
         return bagOfTokens;
