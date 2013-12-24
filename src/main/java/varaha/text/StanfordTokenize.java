@@ -76,7 +76,6 @@ public class StanfordTokenize extends EvalFunc<DataBag> {
           label = (CoreLabel)ptbt.next();
           if(label.value().length() > 2)
           {
-            System.err.println(label.toString());
             Tuple termText = tupleFactory.newTuple(label.word());
             bagOfTokens.add(termText);
           }
