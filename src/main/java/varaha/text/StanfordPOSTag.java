@@ -56,7 +56,7 @@ import edu.stanford.nlp.ling.Word;
  * @author Russell Jurney
  *
  */
-public class StanfordPOSTagger extends EvalFunc<DataBag> {
+public class StanfordPOSTag extends EvalFunc<DataBag> {
 
     private static TupleFactory tupleFactory = TupleFactory.getInstance();
     private static BagFactory bagFactory = BagFactory.getInstance();
