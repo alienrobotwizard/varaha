@@ -104,7 +104,7 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
         }
         else if(inThing instanceof DataBag) {
             Iterator<Tuple> itr = ((DataBag)inThing).iterator();
-            List<Word> sentence = null;
+            List<Word> sentence = new ArrayList<Word>();
             while(itr.hasNext()) {
                 Tuple t = itr.next();
                 if(t.get(0) != null) {
@@ -112,13 +112,12 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
                     sentence.add(word);
                 }
             }
-            ArrayList<TaggedWord> tagged_sentence = tagger.apply(sentence);
-            for( TaggedWord tw : tagged_sentence) {
-                ArrayList values = new ArrayList();
-                values.add(tw.word());
-                values.add(tw.toString("_"));
-                Tuple t = tupleFactory.newTuple(values);
-                bagOfTokens.add(t);
+            List<TaggedWord> taggedSentence = tagger.apply(sentence);
+            for( TaggedWord word : taggedSentence) {
+                String token = word.word();
+                String tag = word.tag();
+                Tuple termText = tupleFactory.newTuple(Arrays.asList(token, tag));
+                bagOfTokens.add(termText);
             }
         }
         else
