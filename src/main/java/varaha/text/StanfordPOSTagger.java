@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import edu.stanford.nlp.ling.TaggedWord;
+import edu.stanford.nlp.process.DocumentPreprocessor;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
@@ -84,40 +85,20 @@ public class StanfordPOSTagger extends EvalFunc<DataBag> {
         Object inThing = input.get(0);
         if(inThing instanceof String) {
             StringReader textInput = new StringReader((String)inThing);
+            Tuple termText = null;
+            List<TaggedWord> taggedSentence = null;
+            DocumentPreprocessor dp = new DocumentPreprocessor(textInput);
+            for (List sentence : dp) {
+                taggedSentence = tagger.apply(sentence);
 
-            // Convert StringReader to String via StringBuilder
-            //using string builder is more efficient than concating strings together.
-            StringBuilder builder = new StringBuilder();
-            int charsRead = -1;
-            char[] chars = new char[100];
-            do
-            {
-                charsRead = textInput.read(chars,0,chars.length);
-                //if we have valid chars, append them to end of string.
-                if(charsRead > 0)
-                {
-                    builder.append(chars,0,charsRead);
+                // Now split based on '_' and build/return a bag of 2-field tuples
+                termText = tupleFactory.newTuple();
+                for (TaggedWord word : taggedSentence ) {
+                    String token = word.word();
+                    String tag = word.tag();
+                    termText = tupleFactory.newTuple(Arrays.asList(token, tag));
+                    bagOfTokens.add(termText);
                 }
-            }
-            while(charsRead > 0);
-
-            // Tagging with the Stanford tagger produces another string, format: word_TAG
-            String stringReadFromReader = builder.toString();
-            String tagged = tagger.tagString(stringReadFromReader);
-            StringReader taggedInput = new StringReader(tagged);
-
-            // Use the Stanford Tokenizer to tokenize the text
-            PTBTokenizer ptbt = new PTBTokenizer(taggedInput, new CoreLabelTokenFactory(), "invertible=true");
-
-            // Now split based on '_' and build/return a bag of 2-field tuples
-            Tuple termText = tupleFactory.newTuple();
-            for (CoreLabel label; ptbt.hasNext(); ) {
-                label = (CoreLabel)ptbt.next();
-                String word = label.value();
-
-                List<String> token = Arrays.asList(word, wordTag);
-                termText = tupleFactory.newTuple(token);
-                bagOfTokens.add(termText);
             }
             bagOfTokens.add(termText);
         }
