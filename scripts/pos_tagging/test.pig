@@ -2,7 +2,7 @@ register ../../lib/stanford-postagger-withModel.jar
 register ../../target/varaha-1.0-SNAPSHOT.jar
 
 reviews = LOAD 'data/ten.avro' USING AvroStorage;
-foo = FOREACH reviews GENERATE business_id, varaha.text.StanfordTokenize(text) AS tagged;
+foo = FOREACH reviews GENERATE business_id, varaha.text.StanfordTokenize(text) AS tokenized;
 DUMP foo
 
 reviews = LOAD 'data/ten.avro' USING AvroStorage();
