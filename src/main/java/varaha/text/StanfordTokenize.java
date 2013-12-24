@@ -54,7 +54,7 @@ import edu.stanford.nlp.process.PTBTokenizer;
  * </dl>
  * 
  * @see
- * @author Jacob Perkins
+ * @author Russell Jurney
  *
  */
 public class StanfordTokenize extends EvalFunc<DataBag> {
@@ -74,10 +74,12 @@ public class StanfordTokenize extends EvalFunc<DataBag> {
 
         for (CoreLabel label; ptbt.hasNext(); ) {
           label = (CoreLabel)ptbt.next();
-          Tuple termText = tupleFactory.newTuple(label.toString());
-          bagOfTokens.add(termText);
-        }
-        
+          if(label.value().length() > 2)
+          {
+            Tuple termText = tupleFactory.newTuple(label.word());
+            bagOfTokens.add(termText);
+          }
+        }  
         return bagOfTokens;
     }
 }
